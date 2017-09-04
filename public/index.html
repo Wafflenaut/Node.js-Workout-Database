@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script>
+		//Some code/code skeletons from CS290 used as a basis for these functions
+		document.addEventListener('DOMContentLoaded', bindButtons);
+		
+		//clear table and add a form in its place with the selected item to update
+		function updateRowView(rowID){
+			var req = new XMLHttpRequest();
+			
+			var clearDom = document.getElementById("workoutTable");
+			while(clearDom.firstChild){
+				clearDom.removeChild(clearDom.firstChild);
+			}
+			
+			
+			var url = 'http://flip3.engr.oregonstate.edu:22667/id-lookup/?id=' + rowID;
+
+			req.open("GET", url, true);
+			
+			req.addEventListener('load', function(){
+				if(req.status >= 200 && req.status < 400){
+				
+					var response = JSON.parse(req.responseText);
+					response = JSON.parse(response.results);
+
+					var workouts = document.getElementById("workoutTable");
+					var updateForm = document.createElement("FORM");
+					var updateField = document.createElement("FIELDSET");
+					var formLegend = document.createElement("LEGEND");
+					formLegend.appendChild(document.createTextNode("Row to Edit:"));
+					updateField.appendChild(formLegend);
+					
+					var nameLabel = document.createElement("LABEL");
+					nameLabel.appendChild(document.createTextNode("Workout Name: "));
+					var nameForm = document.createElement("INPUT");
+					nameForm.setAttribute("type", "text");
+					nameForm.setAttribute("name", "uName");
+					nameForm.id = "uName";
+					nameForm.value = response[0].name;
+					updateField.appendChild(nameLabel);
+					updateField.appendChild(nameForm);
+					
+					var repsLabel = document.createElement("LABEL");
+					repsLabel.appendChild(document.createTextNode("Reps: "));
+					var repsForm = document.createElement("INPUT");
+					repsForm.setAttribute("type", "number");
+					repsForm.setAttribute("name", "uReps");
+					repsForm.id = "uReps";
+					repsForm.value = response[0].reps;
+					updateField.appendChild(repsLabel);
+					updateField.appendChild(repsForm);
+					
+					var weightLabel = document.createElement("LABEL");
+					weightLabel.appendChild(document.createTextNode("Weight: "));
+					var weightForm = document.createElement("INPUT");
+					weightForm.setAttribute("type", "number");
+					weightForm.setAttribute("name", "uWeight");
+					weightForm.id = "uWeight";
+					weightForm.value = response[0].weight;
+					updateField.appendChild(weightLabel);
+					updateField.appendChild(weightForm);
+					
+					var dateLabel = document.createElement("LABEL");
+					dateLabel.appendChild(document.createTextNode("Date: "));
+					var dateForm = document.createElement("INPUT");
+					dateForm.setAttribute("type", "date");
+					dateForm.setAttribute("name", "uDate");
+					dateForm.id = "uDate";
+					var dateShort = response[0].date;
+					dateShort = dateShort.substring(0,10)//use substring to get date value
+					dateForm.value = dateShort;
+					updateField.appendChild(dateLabel);
+					updateField.appendChild(dateForm);
+
+					var lbsLabel = document.createElement("LABEL");
+					lbsLabel.appendChild(document.createTextNode("Lbs: "));
+					lbsLabel.setAttribute("name", "uLbs");
+					var lbsTrue = document.createElement("LABEL");
+					lbsTrue.setAttribute("for", "uLbs");
+					lbsTrue.appendChild(document.createTextNode("true: "));
+					var lbsTrueRadio = document.createElement("INPUT");
+					lbsTrueRadio.setAttribute("type", "radio");
+					lbsTrueRadio.setAttribute("name", "uLbs");
+					lbsTrueRadio.id = "uLbsTrue";
+					lbsTrueRadio.value = "True";
+					var lbsFalse = document.createElement("LABEL");
+					lbsFalse.setAttribute("for", "uLbs");
+					lbsFalse.appendChild(document.createTextNode("false: "));
+					var lbsFalseRadio = document.createElement("INPUT");
+					lbsFalseRadio.setAttribute("type", "radio");
+					lbsFalseRadio.setAttribute("name", "uLbs");
+					lbsFalseRadio.id = "uLbsFalse";
+					lbsFalseRadio.value = "False";
+					
+					if(response[0].lbs == 1){
+					lbsTrueRadio.value = true;
+					lbsFalseRadio.value = false;
+					lbsTrueRadio.checked = true;
+					lbsFalseRadio.checked = false;
+					}
+					else{
+					lbsFalseRadio.value = true;
+					lbsTrueRadio.value = false;
+					lbsFalseRadio.checked = true;
+					lbsTrueRadio.checked = false;
+					}
+					
+					updateField.appendChild(lbsLabel);
+					updateField.appendChild(lbsTrue);
+					updateField.appendChild(lbsTrueRadio);
+					updateField.appendChild(lbsFalse);
+					updateField.appendChild(lbsFalseRadio);
+
+					
+					var updateSubmit = document.createElement("INPUT");
+					updateSubmit.setAttribute("type", "submit");
+					updateSubmit.id = "updateSubmit";
+					updateSubmit.onclick = function(){
+						if(document.getElementById("uName").value == ""){
+						console.log("Error - NULL/Empty Name Field");
+						}
+						else{
+					
+						var url = "http://flip3.engr.oregonstate.edu:22667/update/?id=" + response[0].id;
+						url += ("&name=" + document.getElementById("uName").value);
+						url += ("&reps=" + document.getElementById("uReps").value);
+						url += ("&weight=" + document.getElementById("uWeight").value);
+						url += ("&date=" + document.getElementById("uDate").value);
+						
+						var lbs;
+						
+						if(document.getElementById('uLbsTrue').checked == true){
+							lbs = "1";
+						}
+						else{
+							lbs = "0";
+						}
+
+						url += ("&lbs=" + lbs);
+						
+
+						updateRow(url);
+						}
+					}
+					updateField.appendChild(updateSubmit);
+					updateForm.appendChild(updateField);
+					workouts.appendChild(updateForm);
+
+
+					}
+				else{
+					console.log("Error in network request: " + request.statusText);
+							
+				}});
+			req.send(null);
+
+			event.preventDefault();
+			
+		
+		}
+		
+		//update a row
+		function updateRow(url){
+			var req = new XMLHttpRequest();
+			
+			req.open("GET", url, true);
+		
+			req.addEventListener('load', function(){
+				if(req.status >= 200 && req.status < 400){
+					renderTable();
+					}
+				else{
+					console.log("Error in network request: " + request.statusText);
+						
+				}});
+			req.send(null);
+
+			event.preventDefault();
+		
+			}
+		
+		//delete a row
+		function deleteRow(rowID){
+			var req = new XMLHttpRequest();
+			
+			var clearDom = document.getElementById("workoutTable");
+			while(clearDom.firstChild){
+				clearDom.removeChild(clearDom.firstChild);
+			}
+		
+			var url = "http://flip3.engr.oregonstate.edu:22667/delete/?id=" + rowID;
+		
+			req.open("GET", url, true);
+		
+			req.addEventListener('load', function(){
+				if(req.status >= 200 && req.status < 400){
+				
+					renderTable();
+					}
+				else{
+					console.log("Error in network request: " + request.statusText);
+						
+				}});
+			req.send(null);
+
+			event.preventDefault();
+
+			}
+		
+		//add a new entry to the database
+		function newEntry(){
+			var req = new XMLHttpRequest();
+			
+			var clearDom = document.getElementById("workoutTable");
+					while(clearDom.firstChild){
+						clearDom.removeChild(clearDom.firstChild);
+					}
+			if(document.getElementById('wName').value == ""){
+			console.log("Error - Name Field is NULL/empty, unable to add");
+			}
+			else{
+			var name = document.getElementById('wName').value;
+			var reps = document.getElementById('wReps').value;
+			var weight = document.getElementById('wWeight').value;
+			var date = document.getElementById('wDate').value;
+			var lbs;
+			if(document.getElementById('wLbsTrue').checked == true){
+				lbs = "1";
+			}
+			else{
+				lbs = "0";
+			}
+			var url = 'http://flip3.engr.oregonstate.edu:22667/insert/?name=' + name + '&reps=' + reps + '&weight=' + weight + '&date=' + date + '&lbs=' + lbs;
+
+			req.open("GET", url, true);
+			
+			req.addEventListener('load', function(){
+				if(req.status >= 200 && req.status < 400){
+					
+					//NULL
+			
+
+					}
+				else{
+					console.log("Error in network request: " + request.statusText);
+							
+				}});
+			req.send(null);
+
+			event.preventDefault();
+			}
+			
+			//re-render the table
+			renderTable();
+			//Clear the 'Add Workout fields'
+			document.getElementById('wName').value = "";
+			document.getElementById('wReps').value = "";
+			document.getElementById('wWeight').value = "";
+			document.getElementById('wDate').value = "";
+			document.getElementById('wLbsTrue').checked = false;
+			document.getElementById('wLbsFalse').checked = false;
+
+			}
+		
+
+		//render the table
+		function renderTable(){
+
+		var req = new XMLHttpRequest();
+
+		req.open("GET", 'http://flip3.engr.oregonstate.edu:22667/get-table', true);
+					
+		req.addEventListener('load',function(){
+			if(req.status >= 200 && req.status < 400){
+			
+				var clearDom = document.getElementById("workoutTable");
+				while(clearDom.firstChild){
+					clearDom.removeChild(clearDom.firstChild);
+				}
+			
+				var response = JSON.parse(req.responseText);
+				response = JSON.parse(response.results);
+				
+				var workouts = document.getElementById("workoutTable");
+				var newTable = document.createElement("table");
+				newTable.style.margin = "0 auto";
+				var newBody = document.createElement("tbody");
+				
+				var newRow = document.createElement('tr');
+				var newItem = document.createElement('th')
+				newItem.appendChild(document.createTextNode("Exercise"));
+				newItem.style.border = "1px solid black";
+				newRow.appendChild(newItem);
+				var newItem2 = document.createElement('th')
+				newItem2.appendChild(document.createTextNode("Reps"));
+				newRow.appendChild(newItem2);
+				newItem2.style.border = "1px solid black";
+				var newItem3 = document.createElement('th')
+				newItem3.appendChild(document.createTextNode("Weight"));
+				newRow.appendChild(newItem3);
+				newItem3.style.border = "1px solid black";
+				var newItem4 = document.createElement('th')
+				newItem4.appendChild(document.createTextNode("Date"));
+				newRow.appendChild(newItem4);
+				newItem4.style.border = "1px solid black";
+				var newItem5 = document.createElement('th')
+				newItem5.appendChild(document.createTextNode("In Lbs"));
+				newRow.appendChild(newItem5);
+				newItem5.style.border = "1px solid black";
+				var newItem6 = document.createElement('th')
+				newItem6.appendChild(document.createTextNode("Modify/Delete Data"));
+				newRow.appendChild(newItem6);
+				newItem6.style.border = "1px solid black";
+				newBody.appendChild(newRow);
+				workouts.appendChild(newBody);
+				
+				for(var i = 0; i < response.length; i++){
+					var newRow = document.createElement("tr");
+					var exerciseCell = document.createElement("td");
+					exerciseCell.appendChild(document.createTextNode(response[i].name));
+					exerciseCell.style.border = "1px solid black";
+					newRow.appendChild(exerciseCell);
+					var repsCell = document.createElement("td");
+					repsCell.appendChild(document.createTextNode(response[i].reps));
+					repsCell.style.border = "1px solid black";
+					newRow.appendChild(repsCell);
+					var weightCell = document.createElement("td");
+					weightCell.appendChild(document.createTextNode(response[i].weight));
+					weightCell.style.border = "1px solid black";
+					newRow.appendChild(weightCell);
+					var dateCell = document.createElement("td");
+					dateCell.appendChild(document.createTextNode(response[i].date));
+					dateCell.style.border = "1px solid black";
+					newRow.appendChild(dateCell);
+					var inLbsCell = document.createElement("td");
+					var lbsBool = response[i].lbs;
+					if(lbsBool == "0"){
+					lbsBool = "False"
+					}
+					else{
+					lbsBool = "True"
+					}
+					inLbsCell.appendChild(document.createTextNode(lbsBool));
+					inLbsCell.style.border = "1px solid black";
+					newRow.appendChild(inLbsCell);
+					var formCell = document.createElement("td");
+					var updateButton = document.createElement("BUTTON");
+					updateButton.appendChild(document.createTextNode("Edit"));
+					updateButton.value = response[i].id;
+					updateButton.onclick = function(){
+						updateRowView(this.value);
+					}
+					var deleteButton = document.createElement("BUTTON");
+					deleteButton.appendChild(document.createTextNode("Delete"));
+					deleteButton.value = response[i].id;
+					deleteButton.onclick = function(){
+						deleteRow(this.value);
+						}
+					formCell.appendChild(updateButton);
+					formCell.appendChild(deleteButton);
+					formCell.style.border = "1px solid black";
+					newRow.appendChild(formCell);
+					newBody.appendChild(newRow);
+				}
+				}
+			else{
+				console.log("Error in network request: " + req.statusText);
+						
+				}});
+			req.send(null);
+
+		}
+
+		
+		
+		function bindButtons(){
+		
+			document.getElementById('workoutSubmit').addEventListener('click',function(event){
+				newEntry();
+			})
+		}
+		
+		
+		renderTable();
+		
+    </script>
+  </head>
+  <body>
+  
+      <form>
+      <fieldset>
+        <legend>Add Workout</legend>
+        <label for="wName">Workout Name:</label>
+		<input type="text" name="wName" id="wName">
+		<label for="wReps">Reps:</label>
+		<input type="number" name="wReps" id="wReps">
+		<label for="wWeight">Weight:</label>
+		<input type="number" name="wWeight" id="wWeight">
+		<label for="wDate">Date:</label>
+		<input type="date" name="wDate" id="wDate">
+		<label for="wLbs">Lbs:</label>
+		<label for="wLbs">true:</label>
+		<input type="radio" name="wLbs" value = "True" id="wLbsTrue">
+		<label for="wLbs">false:</label>
+		<input type="radio" name="wLbs" value = "False" id="wLbsFalse">
+        <input type="submit" id="workoutSubmit">
+      </fieldset>
+    </form>
+
+	<div id="workoutTable"></div>
+  </body>
+</html>
